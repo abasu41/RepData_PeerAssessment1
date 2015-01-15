@@ -42,7 +42,33 @@ maxSteps <- dtAvgByInt[which.max(dtAvgByInt$avgSteps),]$avgSteps
 The maximum average steps of `r maxSteps` is found at interval `r maxInterval`.
 
 ## Imputing missing values
+1. The total number of missing values is calculated by adding missing values for each column (even though only the steps column has any missing values, we use the other columns just to be sure)
+```{r count-missing}
+missingValues <- sum(is.na(df$steps)) + sum(is.na(df$date)) + sum(is.na(df$interval))
+```
+The total number of missing values in the dataset is `r missingValues`
 
 
+2. To fill the missing values, we just use the mean of that interval. Earlier we had calculated the mean of each interval. We use the values from that data frame to populate any missing values. For example, if the interval 0 is missing a steps value, we look up the value of the mean from the dtAvgByInt table for interval 0 and replace the NA with that value.
 
+3. The new dataset is created using the following code:
+```{r replace-missing}
+df2 <- data.table(df)
+for ( i in 1:nrow(df2)) {
+    if (is.na(df2[i, ][,steps])) {
+      inter = df2[i,]$interval
+      df2[i,]$steps = as.integer(dtAvgByInt[interval==inter]$avgSteps)
+    }
+}
+
+```
+We then calculate the new histogram of the data set using the same steps as in the first question
+```{r summarize-without-na}
+dt2SumByDate <- df2[, list(sumSteps=sum(steps)), by=date]
+hist(dt2SumByDate$sumSteps, main='Histogram of Total Number of Steps for each day (No NAs)', xlab='Total Steps')
+mn2 <- mean(dt2SumByDate$sumSteps, na.rm=TRUE)
+md2 <- median(dt2SumByDate$sumSteps, na.rm=TRUE)
+```
+The new mean after replacing the NA with a daily average for that interval is `r sprintf("%0.5f",mn2)` and the median is `r sprintf("%0.5f",md2)`.
+As can be seen by comparing the values to the first answer, the overall shape of the histogram remains the same and there is only a very small shift in the value of the new mean towards the left of the original mean. 
 ## Are there differences in activity patterns between weekdays and weekends?
