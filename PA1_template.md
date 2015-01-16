@@ -8,6 +8,8 @@ the data.table and ggplot2 packages to process and plot the data. The date colum
 ```r
 library('data.table')
 library('ggplot2')
+library('lattice')
+library('sqldf')
 ```
 
 ```r
@@ -72,7 +74,7 @@ for ( i in 1:nrow(df2)) {
     }
 }
 ```
-We then calculate the new histogram of the data set using the same steps as in the first question
+4. We then calculate the new histogram of the data set using the same steps as in the first question
 
 ```r
 dt2SumByDate <- df2[, list(sumSteps=sum(steps)), by=date]
@@ -87,4 +89,25 @@ md2 <- median(dt2SumByDate$sumSteps, na.rm=TRUE)
 ```
 The new mean after replacing the NA with a daily average for that interval is 10749.77049 and the median is 10641.00000.
 As can be seen by comparing the values to the first answer, the overall shape of the histogram remains the same and there is only a very small shift in the value of the new mean towards the left of the original mean. 
+
 ## Are there differences in activity patterns between weekdays and weekends?
+
+Use the df2 data frame as created in the above question which has all the missing values filled in. Convert the date column to a date type first and then add a new column which computes the day of the week using the weekdays function. The convert the day to either 'weekday' or 'weekend' depending upon the value.Finally we use xyplot from lattice to draw the two plots
+
+
+```r
+df2$date <- as.POSIXct(dt$date, format='%Y-%m-%d')
+df2 <- cbind(df2, dayOfWeek=weekdays(df2[,date]))
+df2 <- cbind(df2, dayType='weekday')
+df2$dayType[df2$dayOfWeek=='Sunday'] <- 'weekend'
+df2$dayType <-factor(df2$dayType)
+weekdays <- df2[dayType=='weekday']
+weekends <- df2[dayType=='weekend']
+df3 <- sqldf('select avg(steps) avgSteps, interval, "weekday" as dayType from weekdays where dayType=="weekday" group by interval')
+df4 <- sqldf('select avg(steps) avgSteps, interval, "weekend" as dayType from weekends where dayType=="weekend" group by interval')
+df3 <- rbind(df3, df4)
+xyplot(avgSteps~interval | dayType, data=df3, type='l', main='Average Steps for each interval by weekday or weekend', layout=c(1,2), xlab='Interval', ylab='Average Steps')
+```
+
+![](./PA1_template_files/figure-html/compare-activity-1.png) 
+
